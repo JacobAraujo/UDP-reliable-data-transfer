@@ -50,8 +50,9 @@ def waitResponse():
                     message, addr = messages.get()
                     print(message.decode())
                     if isNAK(message.decode()):
-                        data = toSend.get()
-                        sender.sendto(data) # <-- wrong data -- bug
+                        reSend, addrReSend = toSend.get()
+                        sender.sendto(reSend, addrReSend)
+                        toSend.put((reSend, addrReSend))
                         print("Reenviando pacote")
                     elif isACK(message.decode()):
                         print("Confirmacao recebida")

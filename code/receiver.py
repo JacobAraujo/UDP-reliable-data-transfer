@@ -14,19 +14,17 @@ def receive():
             messages.put((message, addr))
         except:
             pass
-        
-        
-cont = 0        
+            
 def receiverResponse():
     while True:
         while not messages.empty():
             message, addr = messages.get()
             print(message.decode())
-            if isCorrupt(message) or cont > 3:
+            print(cont)
+            if isCorrupt(message):
                 nak = make_NAK()
                 receiver.sendto(nak.encode(), addr)
                 print("enviando nack")
-                cont += 1
             else:
                 ack = make_ACK()
                 receiver.sendto(ack.encode(), addr)
