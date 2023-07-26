@@ -1,6 +1,7 @@
 import socket
 import threading
 import queue
+from utils import checkReceiverChecksum
 
 messages = queue.Queue()
 
@@ -18,20 +19,21 @@ def receive():
 def receiverResponse():
     while True:
         while not messages.empty():
+            
             message, addr = messages.get()
-            print(message.decode())
-            print(cont)
-            if isCorrupt(message):
-                nak = make_NAK()
-                receiver.sendto(nak.encode(), addr)
-                print("enviando nack")
-            else:
+            message = message.decode().split("|")
+            checksum = message[1]
+            message = message[0]
+            
+            if checkReceiverChecksum(message, checksum):
                 ack = make_ACK()
                 receiver.sendto(ack.encode(), addr)
                 print("enviando ack")
                 
-def isCorrupt(message):
-    return True
+            else:
+                nak = make_NAK()
+                receiver.sendto(nak.encode(), addr)
+                print("enviando nack")
 
 def make_NAK():
     return "NAK"

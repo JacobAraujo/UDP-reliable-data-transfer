@@ -1,7 +1,7 @@
 import socket
 import threading
 import queue
-
+from utils import findChecksum
 
 # Perguntas:
 # - Sempre vai ser só um sender e só um receiver
@@ -32,14 +32,14 @@ def waitSend():
                 message = input("Menssagem: ")
                 addr = input("Destino: ")
                 
-                sender.sendto(message.encode(), (addr, 9500))
-                toSend.put((message.encode(), (addr, 9500)))
+                send(message, (addr, 9500))
+                toSend.put((message, (addr, 9500)))
                 state_machine = 2
 
 def send(data, addr):
-    checksum = generateChecksum(data)
+    checksum = findChecksum(data)
     packet = makePacket(data, checksum)
-    sender.sendto(packet, addr)
+    sender.sendto(packet.encode(), addr)
     
 def waitResponse():
     global state_machine
@@ -51,25 +51,22 @@ def waitResponse():
                     print(message.decode())
                     if isNAK(message.decode()):
                         reSend, addrReSend = toSend.get()
-                        sender.sendto(reSend, addrReSend)
+                        print(reSend)
+                        send(reSend, addrReSend) # talvez usar send() -> mas e se o ACK/NAK vier corrompido
                         toSend.put((reSend, addrReSend))
                         print("Reenviando pacote")
                     elif isACK(message.decode()):
                         print("Confirmacao recebida")
                         state_machine = 1
                 
-            
 def isNAK(message):
     return message == "NAK"
     
 def isACK(message):
     return message == "ACK"
-    
-def generateChecksum(data):
-    pass
         
 def makePacket(data, checksum):
-    pass
+    return f"{data}|{checksum}"
                     
 t1 = threading.Thread(target=receive)
 t2 = threading.Thread(target=waitSend)
