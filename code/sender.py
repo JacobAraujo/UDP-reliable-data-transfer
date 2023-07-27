@@ -1,11 +1,7 @@
 import socket
 import threading
 import queue
-from utils import findChecksum
-
-# Perguntas:
-# - Sempre vai ser só um sender e só um receiver
-# - O sender vai enviar só uma mensagem de cada vez ou vai mandar varias <- talvez respondida pelos videos
+from utils import findChecksum, checkReceiverChecksum
 
 messages = queue.Queue()
 toSend = queue.Queue()
@@ -15,7 +11,6 @@ sender.bind(("localhost", 9999))
 
 state_machine = 1
 semaphore = threading.Semaphore()
-numSeq = 1
 
 def receive():
     while True:
@@ -25,7 +20,15 @@ def receive():
         except:
             pass
         
-def waitSend():
+def send(data, addr, numSeq):
+    checksum = findChecksum(data)
+    packet = makePacket(data, checksum, numSeq)
+    sender.sendto(packet.encode(), addr)
+    
+def makePacket(data, checksum, numSeq):
+    return f"{data}|{checksum}|{numSeq}"
+        
+def waitSend0(): # state 1
     global state_machine
     while True:
         with semaphore:
@@ -33,49 +36,85 @@ def waitSend():
                 message = input("Menssagem: ")
                 addr = input("Destino: ")
                 
-                send(message, (addr, 9500))
+                send(message, (addr, 9500), 0)
                 toSend.put((message, (addr, 9500)))
                 state_machine = 2
-
-def send(data, addr):
-    checksum = findChecksum(data)
-    packet = makePacket(data, checksum)
-    sender.sendto(packet.encode(), addr)
+                
+def waitSend1(): # state 3
+    global state_machine
+    while True:
+        with semaphore:
+            if state_machine == 3:
+                message = input("Menssagem: ")
+                addr = input("Destino: ")
+                
+                send(message, (addr, 9500), 1)
+                toSend.put((message, (addr, 9500)))
+                state_machine = 4
     
-def waitResponse():
+def waitResponse1(): # state 4
+    global state_machine
+    while True:
+        with semaphore:
+            if state_machine == 4:
+                while not messages.empty():
+                    message, addr = messages.get()
+                    message = message.decode().split("|")
+                    checksum = message[1]
+                    numSeq = message[2]
+                    message = message[0]
+                    
+                    print(message)
+                    if isNAK(message) or not checkReceiverChecksum(message, checksum): # adicionar verificacao corrompido
+                        reSend, addrReSend = toSend.get()
+                        print(reSend)
+                        send(reSend, addrReSend, 1) # talvez usar send() -> mas e se o ACK/NAK vier corrompido
+                        toSend.put((reSend, addrReSend))
+                        print("Reenviando pacote")
+                    elif isACK(message):
+                        print("Confirmacao recebida")
+                        state_machine = 1
+                        
+def waitResponse0(): # state 2
     global state_machine
     while True:
         with semaphore:
             if state_machine == 2:
                 while not messages.empty():
                     message, addr = messages.get()
-                    print(message.decode())
-                    if isNAK(message.decode()):
+                    message = message.decode().split("|")
+                    checksum = message[1]
+                    numSeq = message[2]
+                    message = message[0]
+                    
+                    print(message)
+                    if isNAK(message) or not checkReceiverChecksum(message, checksum): # adicionar verificacao corrompido
                         reSend, addrReSend = toSend.get()
                         print(reSend)
-                        send(reSend, addrReSend) # talvez usar send() -> mas e se o ACK/NAK vier corrompido
+                        send(reSend, addrReSend, 0) # talvez usar send() -> mas e se o ACK/NAK vier corrompido
                         toSend.put((reSend, addrReSend))
                         print("Reenviando pacote")
-                    elif isACK(message.decode()):
+                    elif isACK(message):
                         print("Confirmacao recebida")
-                        state_machine = 1
+                        state_machine = 3
                 
 def isNAK(message):
     return message == "NAK"
     
 def isACK(message):
     return message == "ACK"
-        
-def makePacket(data, checksum):
-    return f"{data}|{checksum}"
                     
 t1 = threading.Thread(target=receive)
-t2 = threading.Thread(target=waitSend)
-t3 = threading.Thread(target=waitResponse)
+t2 = threading.Thread(target=waitSend0)
+t3 = threading.Thread(target=waitSend1)
+t4 = threading.Thread(target=waitResponse0)
+t5 = threading.Thread(target=waitResponse1)
 
 t1.start()
 t2.start()
 t3.start()
+t4.start()
+t5.start()
 
 # Criando uma instância da máquina de estado
 
