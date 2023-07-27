@@ -15,6 +15,7 @@ sender.bind(("localhost", 9999))
 
 state_machine = 1
 semaphore = threading.Semaphore()
+numSeq = 1
 
 def receive():
     while True:

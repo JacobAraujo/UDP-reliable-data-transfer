@@ -1,5 +1,5 @@
 # Function to find the Checksum of Sent Message
-def findChecksum(SentMessage, k=1):
+def findChecksum(SentMessage):
     SentMessage = stringToBinary(SentMessage)
  
     # Calculating the complement of sum
@@ -11,19 +11,16 @@ def findChecksum(SentMessage, k=1):
             Checksum += '1'
     return Checksum
 
-def checkReceiverChecksum(ReceivedMessage, Checksum, k=1):
+def checkReceiverChecksum(ReceivedMessage, Checksum):
     ReceivedMessage = stringToBinary(ReceivedMessage)
  
     # Calculating the complement of sum
     ReceiverChecksum = ''
-    for i in ReceivedMessage:
-        if(i == '1'):
-            ReceiverChecksum += '0'
-        else:
-            ReceiverChecksum += '1'
-    print(ReceiverChecksum)
-    print(Checksum)
-    return ReceiverChecksum == Checksum
+    for i in range(len(ReceivedMessage)):
+        if ReceivedMessage[i] == Checksum[i]:
+            return False
+            
+    return True
 
 def stringToBinary(s):
     result = ''.join(format(c, 'b') for c in bytearray(s, "utf-8"))

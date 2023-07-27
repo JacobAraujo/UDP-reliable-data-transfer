@@ -16,7 +16,9 @@ def receive():
         except:
             pass
             
+cont = 0
 def receiverResponse():
+    global cont
     while True:
         while not messages.empty():
             
