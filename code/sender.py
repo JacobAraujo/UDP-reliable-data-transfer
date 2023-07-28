@@ -59,19 +59,19 @@ def waitResponse1(): # state 4
             if state_machine == 4:
                 while not messages.empty():
                     message, addr = messages.get()
-                    message = message.decode().split("|")
-                    checksum = message[1]
-                    numSeq = message[2]
-                    message = message[0]
+                    fields = message.decode().split("|")
+                    checksum = fields[1]
+                    numSeq = fields[2]
+                    data = fields[0]
                     
-                    print(message)
-                    if isNAK(message) or not checkReceiverChecksum(message, checksum): # adicionar verificacao corrompido
+                    print(data)
+                    if isNAK(data) or not checkReceiverChecksum(data, checksum): # adicionar verificacao corrompido
                         reSend, addrReSend = toSend.get()
                         print(reSend)
                         send(reSend, addrReSend, 1) # talvez usar send() -> mas e se o ACK/NAK vier corrompido
                         toSend.put((reSend, addrReSend))
                         print("Reenviando pacote")
-                    elif isACK(message):
+                    elif isACK(data):
                         print("Confirmacao recebida")
                         state_machine = 1
                         
@@ -82,19 +82,19 @@ def waitResponse0(): # state 2
             if state_machine == 2:
                 while not messages.empty():
                     message, addr = messages.get()
-                    message = message.decode().split("|")
-                    checksum = message[1]
-                    numSeq = message[2]
-                    message = message[0]
+                    fields = message.decode().split("|")
+                    checksum = fields[1]
+                    numSeq = fields[2]
+                    data = fields[0]
                     
-                    print(message)
-                    if isNAK(message) or not checkReceiverChecksum(message, checksum): # adicionar verificacao corrompido
+                    print(data)
+                    if isNAK(data) or not checkReceiverChecksum(data, checksum): # adicionar verificacao corrompido
                         reSend, addrReSend = toSend.get()
                         print(reSend)
                         send(reSend, addrReSend, 0) # talvez usar send() -> mas e se o ACK/NAK vier corrompido
                         toSend.put((reSend, addrReSend))
                         print("Reenviando pacote")
-                    elif isACK(message):
+                    elif isACK(data):
                         print("Confirmacao recebida")
                         state_machine = 3
                 

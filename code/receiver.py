@@ -6,7 +6,7 @@ from utils import checkReceiverChecksum, findChecksum
 messages = queue.Queue()
 
 receiver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-receiver.bind(("localhost", 9500))
+receiver.bind(("localhost", 9800))
 
 state_machine = 0
 semaphore = threading.Semaphore()
