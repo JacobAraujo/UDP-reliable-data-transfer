@@ -2,6 +2,7 @@ import socket
 import threading
 import queue
 from utils import findChecksum, checkReceiverChecksum
+import time
 
 messages = queue.Queue()
 
@@ -39,10 +40,27 @@ def route():
             numSeq = fields[2]
             data = fields[0]
             
-            if addr == hosts[0]: # se veio do sender
-                router.sendto(message, hosts[1])
+            if addr == hosts[0]:
+                cameFrom = "sender"
             elif addr == hosts[1]:
-                router.sendto(message, hosts[0])
+                cameFrom = "receiver"
+                
+            print(f'\nA menssagem "{data}"\nVeio do {cameFrom}\nCom numero de sequencia: {numSeq}\n')
+            
+            actions = input("1 - Corromper bits\nEscolha: ")
+            
+            if actions == '1':
+                change = input(f'Mudar menssagem de "{data}" para: ')
+                finalMessage = makePacket(change, checksum, numSeq).encode()
+            else: 
+                finalMessage = message
+            
+            if cameFrom == "sender": # se veio do sender
+                router.sendto(finalMessage, hosts[1])
+            elif cameFrom == "receiver":
+                router.sendto(finalMessage, hosts[0])
+                
+            
         
             
 t1 = threading.Thread(target=receive)

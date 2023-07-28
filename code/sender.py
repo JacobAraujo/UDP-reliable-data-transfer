@@ -3,6 +3,8 @@ import threading
 import queue
 from utils import findChecksum, checkReceiverChecksum
 
+# Falta configurar os enderecos pra aceitar comunicacao entre maquinas com diferentes ip
+
 messages = queue.Queue()
 toSend = queue.Queue()
 
