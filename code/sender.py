@@ -1,6 +1,7 @@
 import socket
 import threading
 import queue
+import time
 from utils import findChecksum, checkReceiverChecksum
 
 # Falta configurar os enderecos pra aceitar comunicacao entre maquinas com diferentes ip
@@ -56,10 +57,25 @@ def waitSend1(): # state 3
     
 def waitResponse1(): # state 4
     global state_machine
+    timeout = 20
     while True:
         with semaphore:
             if state_machine == 4:
+                
+                time.sleep(0.1)
+                timeout -= 0.1
+                if timeout <= 0:
+                    reSend, addrReSend = toSend.get()
+                    print(reSend)
+                    send(reSend, addrReSend, 1)
+
+                    toSend.put((reSend, addrReSend))
+                    print("Reenviando pacote")
+                    timeout = 20
+                    
+                
                 while not messages.empty():
+                    
                     message, addr = messages.get()
                     fields = message.decode().split("|")
                     checksum = fields[1]
@@ -70,18 +86,34 @@ def waitResponse1(): # state 4
                     if isNAK(data) or not checkReceiverChecksum(data, checksum): # adicionar verificacao corrompido
                         reSend, addrReSend = toSend.get()
                         print(reSend)
-                        send(reSend, addrReSend, 1) # talvez usar send() -> mas e se o ACK/NAK vier corrompido
+                        send(reSend, addrReSend, 1)
+    
                         toSend.put((reSend, addrReSend))
                         print("Reenviando pacote")
-                    elif isACK(data):
+                    elif isACK(data) and numSeq == '1':
                         print("Confirmacao recebida")
                         state_machine = 1
                         
+                    
+                        
 def waitResponse0(): # state 2
     global state_machine
+    timeout = 20
     while True:
         with semaphore:
             if state_machine == 2:
+                
+                time.sleep(0.1)
+                timeout -= 0.1
+                if timeout <= 0:
+                    reSend, addrReSend = toSend.get()
+                    print(reSend)
+                    send(reSend, addrReSend, 0)
+
+                    toSend.put((reSend, addrReSend))
+                    print("Reenviando pacote")
+                    timeout = 20
+                
                 while not messages.empty():
                     message, addr = messages.get()
                     fields = message.decode().split("|")
@@ -96,7 +128,7 @@ def waitResponse0(): # state 2
                         send(reSend, addrReSend, 0) # talvez usar send() -> mas e se o ACK/NAK vier corrompido
                         toSend.put((reSend, addrReSend))
                         print("Reenviando pacote")
-                    elif isACK(data):
+                    elif isACK(data) and numSeq == '0':
                         print("Confirmacao recebida")
                         state_machine = 3
                 
