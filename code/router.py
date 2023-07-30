@@ -47,18 +47,22 @@ def route():
                 
             print(f'\nA menssagem "{data}"\nVeio do {cameFrom}\nCom numero de sequencia: {numSeq}\n')
             
-            actions = input("1 - Corromper bits\nEscolha: ")
+            actions = input("1 - Corromper bits\n2 - Perder pacote\nEscolha: ")
+            isSend = True
             
             if actions == '1':
                 change = input(f'Mudar menssagem de "{data}" para: ')
                 finalMessage = makePacket(change, checksum, numSeq).encode()
+            elif actions == '2':
+                isSend = False
             else: 
                 finalMessage = message
             
-            if cameFrom == "sender": # se veio do sender
-                router.sendto(finalMessage, hosts[1])
-            elif cameFrom == "receiver":
-                router.sendto(finalMessage, hosts[0])
+            if isSend:
+                if cameFrom == "sender": # se veio do sender
+                    router.sendto(finalMessage, hosts[1])
+                elif cameFrom == "receiver":
+                    router.sendto(finalMessage, hosts[0])
                 
             
         

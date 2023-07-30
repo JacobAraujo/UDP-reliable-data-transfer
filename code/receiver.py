@@ -47,18 +47,13 @@ def receiverResponse0():
                     if checkReceiverChecksum(message, checksum) and numSeq == '0':
                         ack = make_ACK()
                         send(ack, addr, 0)
-                        print("enviando ack")
+                        print("enviando ack 0")
                         state_machine = 1
                         
-                    elif not checkReceiverChecksum(message, checksum):
-                        nak = make_NAK()
-                        send(nak, addr, 0)
-                        print("enviando nack")
-                        
-                    elif numSeq == '1':   
+                    elif not checkReceiverChecksum(message, checksum) or numSeq == '1':
                         ack = make_ACK()
-                        send(ack, addr, 0)
-                        print("enviando ack")
+                        send(ack, addr, 1)
+                        print("enviando ack 1")
                         
                         
 def receiverResponse1():
@@ -82,15 +77,15 @@ def receiverResponse1():
                         print("enviando ack")
                         state_machine = 0
                         
-                    elif not checkReceiverChecksum(message, checksum):
-                        nak = make_NAK()
-                        send(nak, addr, 1)
-                        print("enviando nack")
-                        
-                    elif numSeq == '0':   
+                    elif not checkReceiverChecksum(message, checksum) or numSeq == '0':
                         ack = make_ACK()
-                        send(ack, addr, 1)
-                        print("enviando ack")
+                        send(ack, addr, 0)
+                        print("enviando ack 0")
+                        
+                    # elif numSeq == '0':   ## verificar qual o comportamento correto
+                    #     ack = make_ACK()
+                    #     send(ack, addr, 1)
+                    #     print("enviando ack")
                 
 
 def make_NAK():

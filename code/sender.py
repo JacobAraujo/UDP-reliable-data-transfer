@@ -5,6 +5,7 @@ import time
 from utils import findChecksum, checkReceiverChecksum
 
 # Falta configurar os enderecos pra aceitar comunicacao entre maquinas com diferentes ip
+# Re testar caso de premature timeout na aula em video pra ver se esta funcionando corretamente <- deu certo
 
 messages = queue.Queue()
 toSend = queue.Queue()
@@ -14,6 +15,7 @@ sender.bind(("localhost", 9999))
 
 state_machine = 1
 semaphore = threading.Semaphore()
+timeLimit = 20
 
 def receive():
     while True:
@@ -57,7 +59,7 @@ def waitSend1(): # state 3
     
 def waitResponse1(): # state 4
     global state_machine
-    timeout = 20
+    timeout = timeLimit
     while True:
         with semaphore:
             if state_machine == 4:
@@ -71,7 +73,7 @@ def waitResponse1(): # state 4
 
                     toSend.put((reSend, addrReSend))
                     print("Reenviando pacote")
-                    timeout = 20
+                    timeout = timeLimit
                     
                 
                 while not messages.empty():
@@ -83,22 +85,20 @@ def waitResponse1(): # state 4
                     data = fields[0]
                     
                     print(data)
-                    if isNAK(data) or not checkReceiverChecksum(data, checksum): # adicionar verificacao corrompido
-                        reSend, addrReSend = toSend.get()
-                        print(reSend)
-                        send(reSend, addrReSend, 1)
-    
-                        toSend.put((reSend, addrReSend))
-                        print("Reenviando pacote")
+                    if not checkReceiverChecksum(data, checksum):
+                        pass
                     elif isACK(data) and numSeq == '1':
                         print("Confirmacao recebida")
                         state_machine = 1
+                        while not toSend.empty():
+                            toSend.get()
+                        timeout = timeLimit
                         
                     
                         
 def waitResponse0(): # state 2
     global state_machine
-    timeout = 20
+    timeout = timeLimit
     while True:
         with semaphore:
             if state_machine == 2:
@@ -112,7 +112,7 @@ def waitResponse0(): # state 2
 
                     toSend.put((reSend, addrReSend))
                     print("Reenviando pacote")
-                    timeout = 20
+                    timeout = timeLimit
                 
                 while not messages.empty():
                     message, addr = messages.get()
@@ -122,15 +122,14 @@ def waitResponse0(): # state 2
                     data = fields[0]
                     
                     print(data)
-                    if isNAK(data) or not checkReceiverChecksum(data, checksum): # adicionar verificacao corrompido
-                        reSend, addrReSend = toSend.get()
-                        print(reSend)
-                        send(reSend, addrReSend, 0) # talvez usar send() -> mas e se o ACK/NAK vier corrompido
-                        toSend.put((reSend, addrReSend))
-                        print("Reenviando pacote")
+                    if not checkReceiverChecksum(data, checksum):
+                        pass
                     elif isACK(data) and numSeq == '0':
                         print("Confirmacao recebida")
                         state_machine = 3
+                        while not toSend.empty():
+                            toSend.get()
+                        timeout = timeLimit
                 
 def isNAK(message):
     return message == "NAK"
