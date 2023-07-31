@@ -35,8 +35,6 @@ def receiverResponse0():
                               
                 while not messages.empty():
                     
-                    print('state 0')
-                    
                     message, addr = messages.get()
                     message = message.decode().split("|")
                     
@@ -63,7 +61,6 @@ def receiverResponse1():
             if state_machine == 1:
                               
                 while not messages.empty():
-                    print('state 1')
                     
                     message, addr = messages.get()
                     message = message.decode().split("|")
@@ -74,7 +71,7 @@ def receiverResponse1():
                     if checkReceiverChecksum(message, checksum) and numSeq == '1':
                         ack = make_ACK()
                         send(ack, addr, 1)
-                        print("enviando ack")
+                        print("enviando ack 1")
                         state_machine = 0
                         
                     elif not checkReceiverChecksum(message, checksum) or numSeq == '0':
